@@ -1,0 +1,2093 @@
+openapi: 3.0.3
+info:
+  title: Lume Monolith API
+  description: >-
+    API RESTful do componente Monólito Modular Lume.
+    Projetada sob os princípios de Clean Code, Domain-Driven Design (DDD),
+    LGPD com anonimização estrita do relator, geolocalização nativa PostGIS e
+    padronização canônica de respostas (StandardError).
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Servidor local
+
+tags:
+  - name: Autenticacao
+    description: Operações de registro, login e emissão de tokens JWT
+  - name: Usuarios
+    description: Consulta e atualização cadastral do usuário autenticado
+  - name: Catalogos
+    description: Domínios de apoio públicos para formulários estruturados
+  - name: Estabelecimentos
+    description: Consulta, reputação, histórico e gestão empresarial
+  - name: Seguranca
+    description: Inteligência territorial, diagnóstico de vias públicas e mapa
+  - name: Ocorrencias
+    description: Registro de relatos, histórico pessoal, exclusão lógica e endosso comunitário
+
+paths:
+  # ===========================================================================
+  # 1. AUTENTICAÇÃO
+  # ===========================================================================
+  /v1/auth/cadastrar:
+    post:
+      tags:
+        - Autenticacao
+      summary: Cadastrar novo usuário
+      description: >-
+        Registra uma nova pessoa física com validação de unicidade de CPF e telefone.
+        Dados demográficos (gênero, raça/etnia e orientação sexual) são opcionais.
+      operationId: cadastrarUsuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CadastroUsuarioRequest'
+      responses:
+        '201':
+          description: Usuário cadastrado com sucesso.
+          headers:
+            Location:
+              description: URI canônica do usuário recém-criado
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioResumoResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntityError'
+
+  /v1/auth/login:
+    post:
+      tags:
+        - Autenticacao
+      summary: Autenticar usuário
+      description: >-
+        Valida e-mail e senha, gerando token JWT de acesso.
+        Possui proteção contra ataques de força bruta com bloqueio temporário (lockout).
+      operationId: autenticarUsuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Autenticação realizada com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '423':
+          description: Conta temporariamente bloqueada por excesso de tentativas falhas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardError'
+
+  /v1/auth/refresh:
+    post:
+      tags:
+        - Autenticacao
+      summary: Renovar token de acesso
+      description: Emite um novo token JWT a partir de um refresh token válido.
+      operationId: renovarToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token renovado com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # ===========================================================================
+  # 2. USUÁRIOS
+  # ===========================================================================
+  /v1/usuarios/me:
+    get:
+      tags:
+        - Usuarios
+      summary: Consultar dados do perfil autenticado
+      description: Retorna os dados cadastrais do próprio usuário logado.
+      operationId: obterPerfilUsuarioLogado
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Dados cadastrais retornados com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioDetalheResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    put:
+      tags:
+        - Usuarios
+      summary: Atualizar dados do perfil autenticado
+      description: Atualiza telefone, dados demográficos ou nome completo do usuário logado.
+      operationId: atualizarPerfilUsuarioLogado
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AtualizacaoUsuarioRequest'
+      responses:
+        '200':
+          description: Dados atualizados com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioDetalheResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntityError'
+
+  # ===========================================================================
+  # 3. CATÁLOGOS DE DOMÍNIO
+  # ===========================================================================
+  /v1/catalogos/tipos-violencia:
+    get:
+      tags:
+        - Catalogos
+      summary: Listar tipos de violência
+      description: >-
+        Retorna o catálogo oficial de violências com seus respectivos pesos de
+        gravidade (1 a 10) e ordenação visual no formulário.
+      operationId: listarTiposViolencia
+      responses:
+        '200':
+          description: Lista de tipos de violência.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TipoViolenciaResponse'
+
+  /v1/catalogos/marcadores-vulnerabilidade:
+    get:
+      tags:
+        - Catalogos
+      summary: Listar marcadores de vulnerabilidade
+      description: >-
+        Retorna os marcadores de preconceito e ódio (Misoginia, Racismo, LGBTfobia, etc.)
+        para classificação opcional das ocorrências.
+      operationId: listarMarcadoresVulnerabilidade
+      responses:
+        '200':
+          description: Lista de marcadores de vulnerabilidade.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MarcadorVulnerabilidadeResponse'
+
+  /v1/catalogos/categorias-estabelecimentos:
+    get:
+      tags:
+        - Catalogos
+      summary: Listar categorias de estabelecimentos
+      description: Retorna as categorias de locais comerciais e de lazer suportadas pela plataforma.
+      operationId: listarCategoriasEstabelecimentos
+      responses:
+        '200':
+          description: Lista de categorias de estabelecimentos.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoriaEstabelecimentoResponse'
+
+  # ===========================================================================
+  # 4. ESTABELECIMENTOS
+  # ===========================================================================
+  /v1/estabelecimentos/autocomplete:
+    get:
+      tags:
+        - Estabelecimentos
+      summary: Autocomplete de estabelecimentos cadastrados
+      description: >-
+        Busca rápida por prefixo de nome comercial para o componente de busca
+        "Search-First" na tela inicial do app.
+      operationId: autocompleteEstabelecimentos
+      parameters:
+        - name: termo
+          in: query
+          required: true
+          description: Termo de pesquisa (mínimo de 2 caracteres)
+          schema:
+            type: string
+            minLength: 2
+        - name: cidade
+          in: query
+          required: false
+          description: Filtrar por município
+          schema:
+            type: string
+        - name: limite
+          in: query
+          required: false
+          description: Quantidade máxima de sugestões
+          schema:
+            type: integer
+            default: 5
+            minimum: 1
+            maximum: 20
+      responses:
+        '200':
+          description: Sugestões retornadas com sucesso.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EstabelecimentoAutocompleteResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntityError'
+
+  /v1/estabelecimentos:
+    get:
+      tags:
+        - Estabelecimentos
+      summary: Listar estabelecimentos com paginação e filtros
+      description: >-
+        Consulta paginada de estabelecimentos comerciais com suporte a filtros por
+        categoria, cidade, bairro ou proximidade geográfica.
+      operationId: listarEstabelecimentos
+      parameters:
+        - name: termo
+          in: query
+          required: false
+          description: Busca por nome ou logradouro
+          schema:
+            type: string
+        - name: categoriaId
+          in: query
+          required: false
+          description: ID da categoria
+          schema:
+            type: integer
+        - name: cidade
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: bairro
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: latitude
+          in: query
+          required: false
+          description: Latitude para ordenação por proximidade
+          schema:
+            type: number
+            format: double
+        - name: longitude
+          in: query
+          required: false
+          description: Longitude para ordenação por proximidade
+          schema:
+            type: number
+            format: double
+        - name: raioMetros
+          in: query
+          required: false
+          description: Raio de busca em metros caso coordenadas sejam fornecidas
+          schema:
+            type: integer
+            minimum: 100
+            maximum: 5000
+            default: 1000
+        - name: page
+          in: query
+          required: false
+          description: Número da página (iniciando em 0)
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: size
+          in: query
+          required: false
+          description: Quantidade de itens por página
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Página de estabelecimentos retornada com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstabelecimentoPageResult'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntityError'
+
+    post:
+      tags:
+        - Estabelecimentos
+      summary: Cadastrar novo estabelecimento
+      description: Adiciona um novo comércio ou local de lazer à base comunitária da plataforma.
+      operationId: cadastrarEstabelecimento
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CriacaoEstabelecimentoRequest'
+      responses:
+        '201':
+          description: Estabelecimento cadastrado com sucesso.
+          headers:
+            Location:
+              description: URI canônica do estabelecimento recém-criado
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstabelecimentoDetalheResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntityError'
+
+  /v1/estabelecimentos/meu:
+    get:
+      tags:
+        - Estabelecimentos
+      summary: Consultar estabelecimento gerenciado pelo usuário autenticado
+      description: >-
+        Retorna o único estabelecimento comercial ao qual o usuário autenticado está vinculado
+        como gestor oficial (`ROLE_GESTOR`).
+      operationId: obterMeuEstabelecimento
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Estabelecimento gerenciado retornado com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstabelecimentoDetalheResponse'
+        '204':
+          description: O usuário não gerencia nenhum estabelecimento.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /v1/estabelecimentos/{id}:
+    get:
+      tags:
+        - Estabelecimentos
+      summary: Consultar detalhes de um estabelecimento
+      description: >-
+        Retorna o perfil completo do estabelecimento (estilo ReclameAqui),
+        incluindo score de reputação (0.00 a 5.00), selo verificado e estatísticas consolidadas.
+      operationId: obterEstabelecimentoPorId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID universal do estabelecimento (UUID)
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Dados do estabelecimento retornados com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstabelecimentoDetalheResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      tags:
+        - Estabelecimentos
+      summary: Atualizar dados de um estabelecimento gerenciado
+      description: >-
+        Permite ao gestor oficial com papel `ROLE_GESTOR` atualizar os dados cadastrais
+        e status operacional do seu estabelecimento.
+      operationId: atualizarEstabelecimento
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID do estabelecimento
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AtualizacaoEstabelecimentoRequest'
+      responses:
+        '200':
+          description: Estabelecimento atualizado com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstabelecimentoDetalheResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntityError'
+
+  /v1/estabelecimentos/{id}/ocorrencias:
+    get:
+      tags:
+        - Estabelecimentos
+      summary: Listar histórico de ocorrências de um estabelecimento
+      description: >-
+        Retorna a lista paginada de ocorrências registradas nas dependências do estabelecimento.
+        Em estrita conformidade com a LGPD, a identidade do autor nunca é exposta.
+      operationId: listarOcorrenciasEstabelecimento
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tipoViolenciaId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: marcadorId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: faixaHorario
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/FaixaHorario'
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Ocorrências do local retornadas com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OcorrenciaResumoPageResult'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntityError'
+
+  # ===========================================================================
+  # 5. SEGURANÇA TERRITORIAL & VIAS PÚBLICAS
+  # ===========================================================================
+  /v1/seguranca/diagnostico-raio:
+    get:
+      tags:
+        - Seguranca
+      summary: Diagnóstico de segurança territorial por raio espacial
+      description: >-
+        Alimenta o "Painel de Via Pública". Calcula o índice de risco do perímetro
+        (300m a 2000m) utilizando consultas espaciais PostGIS com índices GiST e
+        ponderação de decaimento temporal, agrupando por turnos e tipos de violência.
+      operationId: obterDiagnosticoRaio
+      parameters:
+        - name: latitude
+          in: query
+          required: true
+          description: Latitude do ponto central consultado
+          schema:
+            type: number
+            format: double
+            minimum: -90
+            maximum: 90
+        - name: longitude
+          in: query
+          required: true
+          description: Longitude do ponto central consultado
+          schema:
+            type: number
+            format: double
+            minimum: -180
+            maximum: 180
+        - name: raioMetros
+          in: query
+          required: false
+          description: Raio espacial em metros (padrão 500m, entre 300m e 500m)
+          schema:
+            type: integer
+            default: 500
+            minimum: 300
+            maximum: 500
+      responses:
+        '200':
+          description: Diagnóstico de risco calculado com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiagnosticoSegurancaResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntityError'
+
+  /v1/seguranca/ocorrencias-mapa:
+    get:
+      tags:
+        - Seguranca
+      summary: Pontos geoespaciais de ocorrências para renderização no mapa
+      description: >-
+        Retorna a lista pública de pontos geográficos no raio delimitado para renderização
+        otimizada de pins e agrupamentos (clusters) no OpenStreetMap / flutter_map (RN01).
+        Para preservar a privacidade (RN04), o id da ocorrência é omitido e, em vias públicas,
+        as coordenadas são arredondadas em 3 casas decimais (HALF_UP, ~110m) e a data da ocorrência é atenuada para o dia 1 do mês.
+      operationId: listarOcorrenciasParaMapa
+      parameters:
+        - name: latitude
+          in: query
+          required: true
+          schema:
+            type: number
+            format: double
+            minimum: -90
+            maximum: 90
+        - name: longitude
+          in: query
+          required: true
+          schema:
+            type: number
+            format: double
+            minimum: -180
+            maximum: 180
+        - name: raioMetros
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 500
+            minimum: 100
+            maximum: 1000
+        - name: dias
+          in: query
+          required: false
+          description: Janela retroativa em dias (máximo 365)
+          schema:
+            type: integer
+            default: 90
+            minimum: 1
+            maximum: 365
+        - name: tipoViolenciaId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: marcadorId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: faixaHorario
+          in: query
+          required: false
+          description: Turno da ocorrência para filtragem
+          schema:
+            $ref: '#/components/schemas/FaixaHorario'
+      responses:
+        '200':
+          description: Pontos de ocorrências retornados com sucesso.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PontoMapaOcorrenciaResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntityError'
+
+  # ===========================================================================
+  # 6. OCORRÊNCIAS & VALIDAÇÕES
+  # ===========================================================================
+  /v1/ocorrencias:
+    post:
+      tags:
+        - Ocorrencias
+      summary: Registrar nova ocorrência estruturada
+      description: >-
+        Registra um relato de violência fechado sem texto livre (RN08), com data,
+        faixa de horário, tipo de violência, marcador opcional e localização geográfica.
+        O autor é associado internamente via JWT e blindado nas leituras públicas.
+      operationId: registrarOcorrencia
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistroOcorrenciaRequest'
+      responses:
+        '201':
+          description: Ocorrência registrada com sucesso.
+          headers:
+            Location:
+              description: URI da ocorrência recém-criada
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OcorrenciaDetalheResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntityError'
+
+  /v1/ocorrencias/minhas:
+    get:
+      tags:
+        - Ocorrencias
+      summary: Listar histórico de ocorrências criadas pelo usuário autenticado
+      description: >-
+        Retorna a lista paginada das ocorrências relatadas pelo usuário logado,
+        indicando se a ocorrência ainda é elegível para exclusão lógica (<= 30 dias).
+      operationId: listarMinhasOcorrencias
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Ocorrências do usuário retornadas com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MinhaOcorrenciaPageResult'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntityError'
+
+  /v1/ocorrencias/{id}:
+    get:
+      tags:
+        - Ocorrencias
+      summary: Consultar detalhes de uma ocorrência
+      description: >-
+        Exibe publicamente (RN01) os dados detalhados da ocorrência e o contador de validações comunitárias.
+        O autor original nunca é exposto nesta resposta (RN04). Para ocorrências em via pública,
+        endereço específico (logradouro, número e bairro) é omitido, as coordenadas são arredondadas em 3 casas decimais (HALF_UP)
+        e as datas (dataOcorrencia e dataRegistro) são atenuadas para o dia 1 do mês.
+      operationId: obterOcorrenciaPorId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Detalhes da ocorrência retornados com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OcorrenciaDetalheResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      tags:
+        - Ocorrencias
+      summary: Excluir logicamente uma ocorrência própria (até 30 dias)
+      description: >-
+        Permite ao autor original excluir logicamente sua própria ocorrência (`status = REMOVIDA`),
+        desde que o registro tenha sido criado há no máximo 30 dias.
+        Tentativas após 30 dias retornam erro 422.
+      operationId: excluirOcorrencia
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID da ocorrência (UUID)
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Ocorrência removida logicamente com sucesso.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Operação negada - o usuário não é o autor da ocorrência.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '422':
+          description: Prazo de exclusão expirado (máximo de 30 dias da publicação).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardError'
+
+    patch:
+      tags:
+        - Ocorrencias
+      summary: Atualizar status de uma ocorrência (moderação e administração)
+      description: >-
+        Permite a um moderador ou administrador alterar o status da ocorrência.
+        Exige perfil `ROLE_MODERADOR` ou `ROLE_ADMIN`.
+      operationId: atualizarStatusOcorrencia
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID da ocorrência (UUID)
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AtualizacaoStatusOcorrenciaRequest'
+      responses:
+        '200':
+          description: Status da ocorrência atualizado com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OcorrenciaDetalheResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntityError'
+
+  /v1/ocorrencias/{id}/validacoes:
+    post:
+      tags:
+        - Ocorrencias
+      summary: Validar ocorrência comunitariamente
+      description: >-
+        Registra o endosso comunitário de um usuário autenticado ("PRESENCIEI" ou "CONHECO_RISCO").
+        Aplica regras anti-sybil (apenas um voto por usuário) e bloqueia autovalidação pelo autor original.
+      operationId: validarOcorrencia
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidacaoOcorrenciaRequest'
+      responses:
+        '201':
+          description: Validação registrada com sucesso.
+          headers:
+            Location:
+              description: URI da ocorrência validada
+              schema:
+                type: string
+                format: uri
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          description: Voto duplicado ou tentativa de validar a própria ocorrência.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardError'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntityError'
+
+    delete:
+      tags:
+        - Ocorrencias
+      summary: Remover validação comunitária previamente feita
+      description: Permite ao usuário cancelar seu voto de validação sobre a ocorrência indicada.
+      operationId: cancelarValidacaoOcorrencia
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Validação removida com sucesso.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+# =============================================================================
+# COMPONENTES REUTILIZÁVEIS
+# =============================================================================
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT stateless enviado no cabeçalho Authorization no padrão 'Bearer {token}'.
+
+  responses:
+    BadRequestError:
+      description: Requisição inválida ou parâmetros ausentes.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
+
+    UnauthorizedError:
+      description: Credenciais ausentes, inválidas ou token JWT expirado.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
+
+    ForbiddenError:
+      description: Acesso não autorizado para o perfil do usuário autenticado.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
+
+    NotFoundError:
+      description: Recurso solicitado não foi encontrado no sistema.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
+
+    ConflictError:
+      description: Conflito de unicidade de dados ou estado da entidade.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
+
+    UnprocessableEntityError:
+      description: Violação de regra de negócio semântica da aplicação.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
+
+  schemas:
+    # -------------------------------------------------------------------------
+    # Schemas de Erro Padronizado (StandardError)
+    # -------------------------------------------------------------------------
+    StandardError:
+      type: object
+      description: Estrutura canônica de erro da API Lume.
+      required:
+        - timestamp
+        - status
+        - error
+        - message
+        - path
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-11-01T15:30:00Z'
+        status:
+          type: integer
+          example: 400
+        error:
+          type: string
+          example: 'Bad Request'
+        message:
+          type: string
+          example: 'Dados fornecidos na requisição são inválidos.'
+        path:
+          type: string
+          example: '/v1/ocorrencias'
+        fields:
+          type: array
+          description: Lista de violações de validação de atributos específicos
+          items:
+            $ref: '#/components/schemas/FieldErrorDetail'
+
+    FieldErrorDetail:
+      type: object
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+          example: 'cpf'
+        message:
+          type: string
+          example: 'CPF deve conter exatamente 11 dígitos numéricos.'
+
+    # -------------------------------------------------------------------------
+    # Tipos Enumerados
+    # -------------------------------------------------------------------------
+    Genero:
+      type: string
+      enum:
+        - MULHER_CIS
+        - HOMEM_CIS
+        - MULHER_TRANS
+        - HOMEM_TRANS
+        - NAO_BINARIO
+        - OUTRO
+        - PREFIRO_NAO_INFORMAR
+
+    RacaEtnia:
+      type: string
+      enum:
+        - BRANCA
+        - PRETA
+        - PARDA
+        - INDIGENA
+        - AMARELA
+        - PREFIRO_NAO_INFORMAR
+
+    OrientacaoSexual:
+      type: string
+      enum:
+        - HETEROSSEXUAL
+        - HOMOSSEXUAL
+        - BISSEXUAL
+        - PANSEXUAL
+        - ASSEXUAL
+        - OUTRO
+        - PREFIRO_NAO_INFORMAR
+
+    FaixaHorario:
+      type: string
+      enum:
+        - MADRUGADA
+        - MANHA
+        - TARDE
+        - NOITE
+      description: Janela de turno da ocorrência (RN07)
+
+    TipoAmbiente:
+      type: string
+      enum:
+        - ESTABELECIMENTO
+        - VIA_PUBLICA
+        - TRANSPORTE_PUBLICO
+        - PARQUE_PRACA
+        - OUTRO
+
+    TipoValidacao:
+      type: string
+      enum:
+        - PRESENCIEI
+        - CONHECO_RISCO
+
+    NivelRisco:
+      type: string
+      enum:
+        - BAIXO
+        - MEDIO
+        - ALTO
+        - CRITICO
+
+    # -------------------------------------------------------------------------
+    # Schemas de Autenticação e Usuários
+    # -------------------------------------------------------------------------
+    CadastroUsuarioRequest:
+      type: object
+      required:
+        - nomeCompleto
+        - cpf
+        - telefone
+        - email
+        - senha
+      properties:
+        nomeCompleto:
+          type: string
+          minLength: 3
+          maxLength: 150
+          example: 'Maria da Silva'
+        cpf:
+          type: string
+          pattern: '^[0-9]{11}$'
+          example: '12345678901'
+        telefone:
+          type: string
+          minLength: 10
+          maxLength: 20
+          example: '11987654321'
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          example: 'maria.silva@exemplo.com'
+        senha:
+          type: string
+          minLength: 8
+          maxLength: 64
+          example: 'SenhaForte#2026'
+        genero:
+          $ref: '#/components/schemas/Genero'
+        racaEtnia:
+          $ref: '#/components/schemas/RacaEtnia'
+        orientacaoSexual:
+          $ref: '#/components/schemas/OrientacaoSexual'
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - senha
+      properties:
+        email:
+          type: string
+          format: email
+          example: 'maria.silva@exemplo.com'
+        senha:
+          type: string
+          example: 'SenhaForte#2026'
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+          example: 'dGhpcy1pcy1hLXJlZnJlc2gtdG9rZW4...'
+
+    TokenResponse:
+      type: object
+      required:
+        - accessToken
+        - tokenType
+        - expiresIn
+        - usuario
+      properties:
+        accessToken:
+          type: string
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+        refreshToken:
+          type: string
+          example: 'dGhpcy1pcy1hLXJlZnJlc2gtdG9rZW4...'
+        tokenType:
+          type: string
+          example: 'Bearer'
+        expiresIn:
+          type: integer
+          description: Tempo de expiração em segundos
+          example: 86400
+        usuario:
+          $ref: '#/components/schemas/UsuarioResumoResponse'
+
+    UsuarioResumoResponse:
+      type: object
+      required:
+        - id
+        - nomeCompleto
+        - email
+        - perfis
+      properties:
+        id:
+          type: string
+          format: uuid
+        nomeCompleto:
+          type: string
+          example: 'Maria da Silva'
+        email:
+          type: string
+          format: email
+          example: 'maria.silva@exemplo.com'
+        perfis:
+          type: array
+          items:
+            type: string
+          example: ['ROLE_USUARIO']
+
+    UsuarioDetalheResponse:
+      type: object
+      required:
+        - id
+        - nomeCompleto
+        - cpf
+        - telefone
+        - email
+        - genero
+        - racaEtnia
+        - orientacaoSexual
+        - perfis
+        - criadoEm
+      properties:
+        id:
+          type: string
+          format: uuid
+        nomeCompleto:
+          type: string
+          example: 'Maria da Silva'
+        cpf:
+          type: string
+          example: '12345678901'
+        telefone:
+          type: string
+          example: '11987654321'
+        email:
+          type: string
+          format: email
+          example: 'maria.silva@exemplo.com'
+        genero:
+          $ref: '#/components/schemas/Genero'
+        racaEtnia:
+          $ref: '#/components/schemas/RacaEtnia'
+        orientacaoSexual:
+          $ref: '#/components/schemas/OrientacaoSexual'
+        perfis:
+          type: array
+          items:
+            type: string
+          example: ['ROLE_USUARIO', 'ROLE_GESTOR']
+        criadoEm:
+          type: string
+          format: date-time
+
+    AtualizacaoUsuarioRequest:
+      type: object
+      properties:
+        nomeCompleto:
+          type: string
+          minLength: 3
+          maxLength: 150
+        telefone:
+          type: string
+          minLength: 10
+          maxLength: 20
+        genero:
+          $ref: '#/components/schemas/Genero'
+        racaEtnia:
+          $ref: '#/components/schemas/RacaEtnia'
+        orientacaoSexual:
+          $ref: '#/components/schemas/OrientacaoSexual'
+
+    # -------------------------------------------------------------------------
+    # Schemas de Catálogos
+    # -------------------------------------------------------------------------
+    TipoViolenciaResponse:
+      type: object
+      required:
+        - id
+        - codigo
+        - nome
+        - pesoGravidade
+      properties:
+        id:
+          type: integer
+          example: 1
+        codigo:
+          type: string
+          example: 'ASSEDIO_VERBAL'
+        nome:
+          type: string
+          example: 'Assédio Verbal / Importunação'
+        pesoGravidade:
+          type: integer
+          minimum: 1
+          maximum: 10
+          example: 2
+        ordemExibicao:
+          type: integer
+          example: 1
+
+    MarcadorVulnerabilidadeResponse:
+      type: object
+      required:
+        - id
+        - codigo
+        - nome
+      properties:
+        id:
+          type: integer
+          example: 1
+        codigo:
+          type: string
+          example: 'MISOGINIA'
+        nome:
+          type: string
+          example: 'Violência contra a Mulher / Misoginia'
+        descricao:
+          type: string
+          example: 'Ataque motivado pelo fato de a vítima ser mulher.'
+
+    CategoriaEstabelecimentoResponse:
+      type: object
+      required:
+        - id
+        - codigo
+        - nome
+      properties:
+        id:
+          type: integer
+          example: 1
+        codigo:
+          type: string
+          example: 'BAR_RESTAURANTE'
+        nome:
+          type: string
+          example: 'Bares e Restaurantes'
+
+    # -------------------------------------------------------------------------
+    # Schemas de Estabelecimentos
+    # -------------------------------------------------------------------------
+    EstabelecimentoAutocompleteResponse:
+      type: object
+      required:
+        - id
+        - nome
+        - categoriaNome
+        - logradouro
+        - bairro
+        - cidade
+        - scoreReputacao
+        - verificado
+      properties:
+        id:
+          type: string
+          format: uuid
+        nome:
+          type: string
+          example: 'Bar do Zé'
+        categoriaNome:
+          type: string
+          example: 'Bares e Restaurantes'
+        logradouro:
+          type: string
+          example: 'Rua Augusta'
+        numero:
+          type: string
+          example: '1200'
+        bairro:
+          type: string
+          example: 'Consolação'
+        cidade:
+          type: string
+          example: 'São Paulo'
+        scoreReputacao:
+          type: number
+          format: double
+          example: 4.85
+        verificado:
+          type: boolean
+          example: true
+
+    CriacaoEstabelecimentoRequest:
+      type: object
+      required:
+        - nome
+        - categoriaId
+        - logradouro
+        - bairro
+        - cidade
+        - estado
+        - latitude
+        - longitude
+      properties:
+        nome:
+          type: string
+          minLength: 3
+          maxLength: 150
+          example: 'Livraria e Café Aurora'
+        categoriaId:
+          type: integer
+          example: 1
+        cnpj:
+          type: string
+          pattern: '^[0-9A-Za-z]{12}[0-9]{2}$'
+          example: '12345678000199'
+        logradouro:
+          type: string
+          minLength: 2
+          maxLength: 150
+          pattern: '^[A-Za-z0-9À-ÿ .,''\-ºª]+$'
+          example: 'Rua das Flores'
+        numero:
+          type: string
+          maxLength: 20
+          pattern: '^[A-Za-z0-9 .,''\-ºª]+$'
+          example: '450'
+        bairro:
+          type: string
+          maxLength: 100
+          pattern: '^[A-Za-z0-9À-ÿ .,''\-ºª]+$'
+          example: 'Centro'
+        cidade:
+          type: string
+          maxLength: 100
+          pattern: '^[A-Za-z0-9À-ÿ .,''\-ºª]+$'
+          example: 'São Paulo'
+        estado:
+          type: string
+          pattern: '^[A-Z]{2}$'
+          example: 'SP'
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+          example: -23.55052
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+          example: -46.633308
+
+    AtualizacaoEstabelecimentoRequest:
+      type: object
+      properties:
+        nome:
+          type: string
+          minLength: 3
+          maxLength: 150
+        categoriaId:
+          type: integer
+        cnpj:
+          type: string
+          pattern: '^[0-9A-Za-z]{12}[0-9]{2}$'
+        logradouro:
+          type: string
+          maxLength: 150
+          pattern: '^[A-Za-z0-9À-ÿ .,''\-ºª]+$'
+        numero:
+          type: string
+          maxLength: 20
+          pattern: '^[A-Za-z0-9 .,''\-ºª]+$'
+        bairro:
+          type: string
+          maxLength: 100
+          pattern: '^[A-Za-z0-9À-ÿ .,''\-ºª]+$'
+        cidade:
+          type: string
+          maxLength: 100
+          pattern: '^[A-Za-z0-9À-ÿ .,''\-ºª]+$'
+        estado:
+          type: string
+          pattern: '^[A-Z]{2}$'
+        ativo:
+          type: boolean
+
+    EstabelecimentoDetalheResponse:
+      type: object
+      required:
+        - id
+        - nome
+        - categoria
+        - logradouro
+        - bairro
+        - cidade
+        - estado
+        - latitude
+        - longitude
+        - scoreReputacao
+        - verificado
+        - ativo
+      properties:
+        id:
+          type: string
+          format: uuid
+        nome:
+          type: string
+          example: 'Livraria e Café Aurora'
+        categoria:
+          $ref: '#/components/schemas/CategoriaEstabelecimentoResponse'
+        cnpj:
+          type: string
+          example: '12345678000199'
+        logradouro:
+          type: string
+          example: 'Rua das Flores'
+        numero:
+          type: string
+          example: '450'
+        bairro:
+          type: string
+          example: 'Centro'
+        cidade:
+          type: string
+          example: 'São Paulo'
+        estado:
+          type: string
+          example: 'SP'
+        latitude:
+          type: number
+          format: double
+          example: -23.55052
+        longitude:
+          type: number
+          format: double
+          example: -46.633308
+        scoreReputacao:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 5
+          example: 4.85
+        verificado:
+          type: boolean
+          example: true
+        ativo:
+          type: boolean
+          example: true
+        totalOcorrenciasHistoricas:
+          type: integer
+          example: 3
+        distribuicaoTurno:
+          $ref: '#/components/schemas/DistribuicaoTurnoResponse'
+        distribuicaoTipoViolencia:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContagemItemResponse'
+
+    EstabelecimentoResumoResponse:
+      type: object
+      required:
+        - id
+        - nome
+        - categoriaNome
+        - bairro
+        - cidade
+        - scoreReputacao
+        - verificado
+      properties:
+        id:
+          type: string
+          format: uuid
+        nome:
+          type: string
+          example: 'Bar do Zé'
+        categoriaNome:
+          type: string
+          example: 'Bares e Restaurantes'
+        logradouro:
+          type: string
+          example: 'Rua Augusta'
+        bairro:
+          type: string
+          example: 'Consolação'
+        cidade:
+          type: string
+          example: 'São Paulo'
+        scoreReputacao:
+          type: number
+          format: double
+          example: 4.85
+        verificado:
+          type: boolean
+          example: true
+
+    # -------------------------------------------------------------------------
+    # Schemas de Segurança Territorial & Diagnóstico
+    # -------------------------------------------------------------------------
+    DiagnosticoSegurancaResponse:
+      type: object
+      required:
+        - latitude
+        - longitude
+        - raioMetros
+        - nivelRisco
+        - scoreRisco
+        - totalOcorrencias
+        - distribuicaoTurno
+        - distribuicaoViolencia
+      properties:
+        latitude:
+          type: number
+          format: double
+          example: -23.55052
+        longitude:
+          type: number
+          format: double
+          example: -46.633308
+        raioMetros:
+          type: integer
+          example: 500
+        nivelRisco:
+          $ref: '#/components/schemas/NivelRisco'
+        scoreRisco:
+          type: number
+          format: double
+          description: Valor de 0.00 a 10.00 discretizado em degraus de 0.50 indicando a densidade de periculosidade
+          example: 2.50
+        totalOcorrencias:
+          type: integer
+          example: 12
+        distribuicaoTurno:
+          $ref: '#/components/schemas/DistribuicaoTurnoResponse'
+          description: Distribuição por faixas horárias aplicando limiar de k-anonymity (k >= 3).
+        distribuicaoViolencia:
+          type: array
+          description: Distribuição por tipo de violência aplicando limiar de k-anonymity (k >= 3).
+          items:
+            $ref: '#/components/schemas/ContagemItemResponse'
+        distribuicaoMarcadores:
+          type: array
+          description: Distribuição por marcador de vulnerabilidade aplicando limiar de k-anonymity (k >= 3).
+          items:
+            $ref: '#/components/schemas/ContagemItemResponse'
+
+    DistribuicaoTurnoResponse:
+      type: object
+      required:
+        - madrugada
+        - manha
+        - tarde
+        - noite
+      properties:
+        madrugada:
+          type: integer
+          example: 5
+        manha:
+          type: integer
+          example: 1
+        tarde:
+          type: integer
+          example: 2
+        noite:
+          type: integer
+          example: 4
+
+    ContagemItemResponse:
+      type: object
+      required:
+        - id
+        - codigo
+        - nome
+        - total
+      properties:
+        id:
+          type: integer
+          example: 1
+        codigo:
+          type: string
+          example: 'ASSEDIO_VERBAL'
+        nome:
+          type: string
+          example: 'Assédio Verbal / Importunação'
+        total:
+          type: integer
+          example: 7
+
+    PontoMapaOcorrenciaResponse:
+      type: object
+      required:
+        - latitude
+        - longitude
+        - tipoViolenciaCodigo
+        - tipoViolenciaNome
+        - pesoGravidade
+        - faixaHorario
+        - dataOcorrencia
+        - totalValidacoes
+      properties:
+        latitude:
+          type: number
+          format: double
+          example: -23.551
+        longitude:
+          type: number
+          format: double
+          example: -46.633
+        tipoViolenciaCodigo:
+          type: string
+          example: 'ASSEDIO_VERBAL'
+        tipoViolenciaNome:
+          type: string
+          example: 'Assédio Verbal'
+        pesoGravidade:
+          type: integer
+          example: 2
+        faixaHorario:
+          $ref: '#/components/schemas/FaixaHorario'
+        dataOcorrencia:
+          type: string
+          format: date
+          example: '2026-10-01'
+        totalValidacoes:
+          type: integer
+          example: 3
+
+    # -------------------------------------------------------------------------
+    # Schemas de Ocorrências e Validações
+    # -------------------------------------------------------------------------
+    RegistroOcorrenciaRequest:
+      type: object
+      required:
+        - dataOcorrencia
+        - faixaHorario
+        - tipoViolenciaId
+      properties:
+        estabelecimentoId:
+          type: string
+          format: uuid
+          description: Opcional. ID do estabelecimento caso o fato tenha ocorrido dentro ou na entrada do comércio. Quando informado, coordenadas, endereço e tipo de ambiente (ESTABELECIMENTO) são herdados automaticamente do estabelecimento.
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+          example: -23.55052
+          description: Coordenada de latitude. Obrigatório quando estabelecimentoId não for informado.
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+          example: -46.633308
+          description: Coordenada de longitude. Obrigatório quando estabelecimentoId não for informado.
+        logradouro:
+          type: string
+          minLength: 2
+          maxLength: 150
+          pattern: '^[A-Za-z0-9À-ÿ .,''\-ºª]+$'
+          example: 'Avenida Paulista'
+          description: Logradouro do fato. Obrigatório quando estabelecimentoId não for informado.
+        numero:
+          type: string
+          maxLength: 20
+          pattern: '^[A-Za-z0-9 .,''\-ºª]+$'
+          example: '1000'
+        bairro:
+          type: string
+          maxLength: 100
+          pattern: '^[A-Za-z0-9À-ÿ .,''\-ºª]+$'
+          example: 'Bela Vista'
+          description: Bairro do fato. Obrigatório quando estabelecimentoId não for informado.
+        cidade:
+          type: string
+          maxLength: 100
+          pattern: '^[A-Za-z0-9À-ÿ .,''\-ºª]+$'
+          example: 'São Paulo'
+          description: Cidade do fato. Obrigatório quando estabelecimentoId não for informado.
+        estado:
+          type: string
+          pattern: '^[A-Z]{2}$'
+          example: 'SP'
+          description: UF com 2 letras maiúsculas. Obrigatório quando estabelecimentoId não for informado.
+        dataOcorrencia:
+          type: string
+          format: date
+          example: '2026-10-25'
+        faixaHorario:
+          $ref: '#/components/schemas/FaixaHorario'
+        tipoViolenciaId:
+          type: integer
+          example: 1
+        marcadorVulnerabilidadeId:
+          type: integer
+          description: Opcional. Marcador de motivação preconceituosa.
+          example: 1
+        tipoAmbiente:
+          $ref: '#/components/schemas/TipoAmbiente'
+          description: Opcional quando estabelecimentoId for informado (assume ESTABELECIMENTO). Obrigatório para ocorrências fora de estabelecimento.
+
+    OcorrenciaDetalheResponse:
+      type: object
+      required:
+        - id
+        - latitude
+        - longitude
+        - cidade
+        - estado
+        - dataOcorrencia
+        - faixaHorario
+        - tipoViolencia
+        - tipoAmbiente
+        - totalValidacoes
+        - dataRegistro
+      properties:
+        id:
+          type: string
+          format: uuid
+        estabelecimentoId:
+          type: string
+          format: uuid
+        estabelecimentoNome:
+          type: string
+          example: 'Bar do Zé'
+        latitude:
+          type: number
+          format: double
+          example: -23.55052
+        longitude:
+          type: number
+          format: double
+          example: -46.633308
+        logradouro:
+          type: string
+          description: Omitido (null) para ocorrências em via pública (sem estabelecimento vinculado) para preservar privacidade (LGPD).
+          example: 'Avenida Paulista'
+        numero:
+          type: string
+          description: Omitido (null) para ocorrências em via pública (sem estabelecimento vinculado) para preservar privacidade (LGPD).
+          example: '1000'
+        bairro:
+          type: string
+          description: Omitido (null) para ocorrências em via pública (sem estabelecimento vinculado) para preservar privacidade (LGPD).
+          example: 'Bela Vista'
+        cidade:
+          type: string
+          example: 'São Paulo'
+        estado:
+          type: string
+          example: 'SP'
+        dataOcorrencia:
+          type: string
+          format: date
+          description: Data do fato. Para ocorrências em via pública, é atenuada para o dia 1 do mês de ocorrência.
+          example: '2026-10-25'
+        faixaHorario:
+          $ref: '#/components/schemas/FaixaHorario'
+        tipoViolencia:
+          $ref: '#/components/schemas/TipoViolenciaResponse'
+        marcadorVulnerabilidade:
+          $ref: '#/components/schemas/MarcadorVulnerabilidadeResponse'
+        tipoAmbiente:
+          $ref: '#/components/schemas/TipoAmbiente'
+        totalValidacoes:
+          type: integer
+          example: 4
+        dataRegistro:
+          type: string
+          format: date
+          example: '2026-10-26'
+
+    OcorrenciaResumoResponse:
+      type: object
+      required:
+        - id
+        - logradouro
+        - bairro
+        - cidade
+        - dataOcorrencia
+        - faixaHorario
+        - tipoViolenciaNome
+        - pesoGravidade
+        - totalValidacoes
+      properties:
+        id:
+          type: string
+          format: uuid
+        logradouro:
+          type: string
+          example: 'Rua Augusta'
+        bairro:
+          type: string
+          example: 'Consolação'
+        cidade:
+          type: string
+          example: 'São Paulo'
+        dataOcorrencia:
+          type: string
+          format: date
+          example: '2026-10-20'
+        faixaHorario:
+          $ref: '#/components/schemas/FaixaHorario'
+        tipoViolenciaNome:
+          type: string
+          example: 'Assédio Verbal'
+        pesoGravidade:
+          type: integer
+          example: 2
+        marcadorNome:
+          type: string
+          example: 'Misoginia'
+        totalValidacoes:
+          type: integer
+          example: 2
+
+    MinhaOcorrenciaResponse:
+      type: object
+      required:
+        - id
+        - logradouro
+        - bairro
+        - cidade
+        - dataOcorrencia
+        - faixaHorario
+        - tipoViolenciaNome
+        - status
+        - criadoEm
+        - permiteExclusao
+        - totalValidacoes
+      properties:
+        id:
+          type: string
+          format: uuid
+        estabelecimentoNome:
+          type: string
+        logradouro:
+          type: string
+          example: 'Avenida Paulista'
+        bairro:
+          type: string
+          example: 'Bela Vista'
+        cidade:
+          type: string
+          example: 'São Paulo'
+        dataOcorrencia:
+          type: string
+          format: date
+          example: '2026-10-20'
+        faixaHorario:
+          $ref: '#/components/schemas/FaixaHorario'
+        tipoViolenciaNome:
+          type: string
+          example: 'Importunação Sexual'
+        status:
+          type: string
+          example: 'PUBLICADA'
+        criadoEm:
+          type: string
+          format: date-time
+          example: '2026-10-21T14:30:00Z'
+        permiteExclusao:
+          type: boolean
+          description: Indica se a ocorrência foi criada há menos de 30 dias e pode ser excluída pelo autor
+          example: true
+        totalValidacoes:
+          type: integer
+          example: 3
+
+    ValidacaoOcorrenciaRequest:
+      type: object
+      required:
+        - tipoValidacao
+      properties:
+        tipoValidacao:
+          $ref: '#/components/schemas/TipoValidacao'
+
+    AtualizacaoStatusOcorrenciaRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - PUBLICADA
+            - SOB_ANALISE
+            - REMOVIDA
+          example: 'SOB_ANALISE'
+
+    # -------------------------------------------------------------------------
+    # Schemas de Paginação Padronizada (PageResult<T>)
+    # -------------------------------------------------------------------------
+    EstabelecimentoPageResult:
+      type: object
+      required:
+        - content
+        - totalElements
+        - totalPages
+        - page
+        - size
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/EstabelecimentoResumoResponse'
+        totalElements:
+          type: integer
+          format: int64
+          example: 100
+        totalPages:
+          type: integer
+          format: int32
+          example: 5
+        page:
+          type: integer
+          format: int32
+          example: 0
+        size:
+          type: integer
+          format: int32
+          example: 20
+
+    OcorrenciaResumoPageResult:
+      type: object
+      required:
+        - content
+        - totalElements
+        - totalPages
+        - page
+        - size
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/OcorrenciaResumoResponse'
+        totalElements:
+          type: integer
+          format: int64
+          example: 45
+        totalPages:
+          type: integer
+          format: int32
+          example: 3
+        page:
+          type: integer
+          format: int32
+          example: 0
+        size:
+          type: integer
+          format: int32
+          example: 20
+
+    MinhaOcorrenciaPageResult:
+      type: object
+      required:
+        - content
+        - totalElements
+        - totalPages
+        - page
+        - size
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/MinhaOcorrenciaResponse'
+        totalElements:
+          type: integer
+          format: int64
+          example: 2
+        totalPages:
+          type: integer
+          format: int32
+          example: 1
+        page:
+          type: integer
+          format: int32
+          example: 0
+        size:
+          type: integer
+          format: int32
+          example: 20

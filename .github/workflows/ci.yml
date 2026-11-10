@@ -1,0 +1,80 @@
+name: CI - Integracao Continua
+
+on:
+  push:
+    branches: [ develop, main ]
+  pull_request:
+    branches: [ develop, main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-test-security:
+    name: Build, Testes e Seguranca
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Baixar codigo do repositorio (Checkout)
+        uses: actions/checkout@v4
+
+      - name: 2. Configurar JDK 25 com Cache Maven
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: 3. Validar Contrato OpenAPI e Compilar
+        run: mvn -B compile
+
+      - name: 4. Executar Suite de Testes (Unitarios, WebMvc e Modulith)
+        run: mvn -B test
+
+      - name: 5. Publicar Relatorios de Teste e Modulith (em caso de falha)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            target/surefire-reports
+            target/spring-modulith-docs
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: 6. Auditoria de Seguranca de Dependencias (Trivy SCA)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+
+      - name: 7. Validar Empacotamento do JAR Executavel
+        run: mvn -B package -DskipTests
+
+  docker-build:
+    name: Validacao do Dockerfile
+    runs-on: ubuntu-latest
+    needs: build-test-security
+
+    steps:
+      - name: 1. Baixar codigo do repositorio (Checkout)
+        uses: actions/checkout@v4
+
+      - name: 2. Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 3. Construir Imagem Multi-Stage
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: lume-api:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

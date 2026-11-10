@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    username: test
+    password: test
+
+jwt:
+  secret: test-jwt-secret-lume-api-minimo-256-bits-segura
+  expiration: 900000
+  refresh-expiration: 604800000
+  issuer: lume
+
+cors:
+  allowed-origins: "http://localhost:3000,http://localhost:8080"
+
+lume:
+  security:
+    crypto:
+      cpf-hmac-key: test-cpf-hmac-key-lume-api-minimo-256-bits
+      cpf-aes-key: test-cpf-aes-key-lume-32bytes-ok

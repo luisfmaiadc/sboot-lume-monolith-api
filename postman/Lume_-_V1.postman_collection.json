@@ -1,0 +1,937 @@
+{
+  "info": {
+    "_postman_id": "f6878bb9-0bd8-45ae-9585-7d97148f432b",
+    "name": "Lume - V1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "37980429"
+  },
+  "item": [
+    {
+      "name": "Render",
+      "item": [
+        {
+          "name": "Auth",
+          "item": [
+            {
+              "name": "cadastrarUsuario",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"nomeCompleto\": \"{{$randomFullName}}\",\r\n  \"cpf\": \"71050493400\",\r\n  \"telefone\": \"11954783215\",\r\n  \"email\": \"{{$randomEmail}}\",\r\n  \"senha\": \"Amora@1313\",\r\n  \"genero\": \"HOMEM_CIS\",\r\n  \"racaEtnia\": \"PARDA\",\r\n  \"orientacaoSexual\": \"HETEROSSEXUAL\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "https://sboot-lume-monolith-api.onrender.com/v1/auth/cadastrar",
+                  "protocol": "https",
+                  "host": [
+                    "sboot-lume-monolith-api",
+                    "onrender",
+                    "com"
+                  ],
+                  "path": [
+                    "v1",
+                    "auth",
+                    "cadastrar"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "autenticar",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const jsonData = pm.response.json();\r\npm.environment.set(\"jwt_token\", jsonData.accessToken);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"email\": \"{{$randomEmail}}\",\r\n  \"senha\": \"Amora@1313\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "https://sboot-lume-monolith-api.onrender.com/v1/auth/login",
+                  "protocol": "https",
+                  "host": [
+                    "sboot-lume-monolith-api",
+                    "onrender",
+                    "com"
+                  ],
+                  "path": [
+                    "v1",
+                    "auth",
+                    "login"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "refresh",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"refreshToken\": \"{{json_web_token_1bkn}}\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "https://sboot-lume-monolith-api.onrender.com/v1/auth/refresh",
+                  "protocol": "https",
+                  "host": [
+                    "sboot-lume-monolith-api",
+                    "onrender",
+                    "com"
+                  ],
+                  "path": [
+                    "v1",
+                    "auth",
+                    "refresh"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Usuários",
+          "item": [
+            {
+              "name": "obterPerfilUsuarioLogado",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "https://sboot-lume-monolith-api.onrender.com/v1/usuarios/me",
+                  "protocol": "https",
+                  "host": [
+                    "sboot-lume-monolith-api",
+                    "onrender",
+                    "com"
+                  ],
+                  "path": [
+                    "v1",
+                    "usuarios",
+                    "me"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "atualizarPerfilLogado",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"nomeCompleto\": \"Luis Felipe Maia da Costa\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "https://sboot-lume-monolith-api.onrender.com/v1/usuarios/me",
+                  "protocol": "https",
+                  "host": [
+                    "sboot-lume-monolith-api",
+                    "onrender",
+                    "com"
+                  ],
+                  "path": [
+                    "v1",
+                    "usuarios",
+                    "me"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Catálogo",
+          "item": [
+            {
+              "name": "listarTiposViolencia",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "https://sboot-lume-monolith-api.onrender.com/v1/catalogos/tipos-violencia",
+                  "protocol": "https",
+                  "host": [
+                    "sboot-lume-monolith-api",
+                    "onrender",
+                    "com"
+                  ],
+                  "path": [
+                    "v1",
+                    "catalogos",
+                    "tipos-violencia"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "listarMarcadoresVulnerabilidade",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "https://sboot-lume-monolith-api.onrender.com/v1/catalogos/marcadores-vulnerabilidade",
+                  "protocol": "https",
+                  "host": [
+                    "sboot-lume-monolith-api",
+                    "onrender",
+                    "com"
+                  ],
+                  "path": [
+                    "v1",
+                    "catalogos",
+                    "marcadores-vulnerabilidade"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "listarCategoriasEstabelecimentosAtivas",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "https://sboot-lume-monolith-api.onrender.com/v1/catalogos/categorias-estabelecimentos",
+                  "protocol": "https",
+                  "host": [
+                    "sboot-lume-monolith-api",
+                    "onrender",
+                    "com"
+                  ],
+                  "path": [
+                    "v1",
+                    "catalogos",
+                    "categorias-estabelecimentos"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Estabelecimentos",
+          "item": [
+            {
+              "name": "cadastrarEstabelecimento",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"nome\": \"Correios\",\r\n  \"categoriaId\": 8,\r\n  \"cnpj\": \"12650997000104\",\r\n  \"logradouro\": \"Avenida Martim Francisco\",\r\n  \"numero\": \"281\",\r\n  \"bairro\": \"Vila Alto de Santo André\",\r\n  \"cidade\": \"Santo André\",\r\n  \"estado\": \"SP\",\r\n  \"latitude\": -23.63267288839043,\r\n  \"longitude\": -46.51388784047925\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "https://sboot-lume-monolith-api.onrender.com/v1/estabelecimentos",
+                  "protocol": "https",
+                  "host": [
+                    "sboot-lume-monolith-api",
+                    "onrender",
+                    "com"
+                  ],
+                  "path": [
+                    "v1",
+                    "estabelecimentos"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "autocompleteEstabelecimentos",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "https://sboot-lume-monolith-api.onrender.com/v1/estabelecimentos/autocomplete?termo=co&cidade=Santo André&limite=10",
+                  "protocol": "https",
+                  "host": [
+                    "sboot-lume-monolith-api",
+                    "onrender",
+                    "com"
+                  ],
+                  "path": [
+                    "v1",
+                    "estabelecimentos",
+                    "autocomplete"
+                  ],
+                  "query": [
+                    {
+                      "key": "termo",
+                      "value": "co"
+                    },
+                    {
+                      "key": "cidade",
+                      "value": "Santo André"
+                    },
+                    {
+                      "key": "limite",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "listarEstabelecimentos",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "https://sboot-lume-monolith-api.onrender.com/v1/estabelecimentos?latitude=-23.62975432750927&longitude=-46.51435275573733&raioMetros=1000&page=0&size=10",
+                  "protocol": "https",
+                  "host": [
+                    "sboot-lume-monolith-api",
+                    "onrender",
+                    "com"
+                  ],
+                  "path": [
+                    "v1",
+                    "estabelecimentos"
+                  ],
+                  "query": [
+                    {
+                      "key": "termo",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "categoriaId",
+                      "value": "8",
+                      "disabled": true
+                    },
+                    {
+                      "key": "cidade",
+                      "value": "Santo André",
+                      "disabled": true
+                    },
+                    {
+                      "key": "bairro",
+                      "value": "Vila Alto de Santo André",
+                      "disabled": true
+                    },
+                    {
+                      "key": "latitude",
+                      "value": "-23.62975432750927"
+                    },
+                    {
+                      "key": "longitude",
+                      "value": "-46.51435275573733"
+                    },
+                    {
+                      "key": "raioMetros",
+                      "value": "1000"
+                    },
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "obterMeuEstabelecimento",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "https://sboot-lume-monolith-api.onrender.com/v1/estabelecimentos/meu",
+                  "protocol": "https",
+                  "host": [
+                    "sboot-lume-monolith-api",
+                    "onrender",
+                    "com"
+                  ],
+                  "path": [
+                    "v1",
+                    "estabelecimentos",
+                    "meu"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "obterEstabelecimentoPorId",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "https://sboot-lume-monolith-api.onrender.com/v1/estabelecimentos/8401f1ae-bf6e-4921-bb70-99f145378d44",
+                  "protocol": "https",
+                  "host": [
+                    "sboot-lume-monolith-api",
+                    "onrender",
+                    "com"
+                  ],
+                  "path": [
+                    "v1",
+                    "estabelecimentos",
+                    "8401f1ae-bf6e-4921-bb70-99f145378d44"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "listarOcorrenciasEstabelecimento",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "https://sboot-lume-monolith-api.onrender.com/v1/estabelecimentos/8401f1ae-bf6e-4921-bb70-99f145378d44?page=0&size=10&tipoViolenciaId=&marcadorId=&faixaHorario=MADRUGADA",
+                  "protocol": "https",
+                  "host": [
+                    "sboot-lume-monolith-api",
+                    "onrender",
+                    "com"
+                  ],
+                  "path": [
+                    "v1",
+                    "estabelecimentos",
+                    "8401f1ae-bf6e-4921-bb70-99f145378d44"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "10"
+                    },
+                    {
+                      "key": "tipoViolenciaId",
+                      "value": ""
+                    },
+                    {
+                      "key": "marcadorId",
+                      "value": ""
+                    },
+                    {
+                      "key": "faixaHorario",
+                      "value": "MADRUGADA"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "atualizarEstabelecimento",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"ativo\": false\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "https://sboot-lume-monolith-api.onrender.com/v1/estabelecimentos/7075e6b9-abca-4903-9e32-2fb8400f2542",
+                  "protocol": "https",
+                  "host": [
+                    "sboot-lume-monolith-api",
+                    "onrender",
+                    "com"
+                  ],
+                  "path": [
+                    "v1",
+                    "estabelecimentos",
+                    "7075e6b9-abca-4903-9e32-2fb8400f2542"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Ocorrências",
+          "item": [
+            {
+              "name": "listarMinhasOcorrencias",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"ativo\": false\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "https://sboot-lume-monolith-api.onrender.com/v1/ocorrencias/minhas",
+                  "protocol": "https",
+                  "host": [
+                    "sboot-lume-monolith-api",
+                    "onrender",
+                    "com"
+                  ],
+                  "path": [
+                    "v1",
+                    "ocorrencias",
+                    "minhas"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "registrarOcorrencia",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"estabelecimentoId\": \"8401f1ae-bf6e-4921-bb70-99f145378d44\",\r\n  \"dataOcorrencia\": \"2026-11-04\",\r\n  \"faixaHorario\": \"MANHA\",\r\n  \"tipoViolenciaId\": 4,\r\n  \"marcadorVulnerabilidadeId\": 5\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "https://sboot-lume-monolith-api.onrender.com/v1/ocorrencias",
+                  "protocol": "https",
+                  "host": [
+                    "sboot-lume-monolith-api",
+                    "onrender",
+                    "com"
+                  ],
+                  "path": [
+                    "v1",
+                    "ocorrencias"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "obterOcorrenciaPorId",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "https://sboot-lume-monolith-api.onrender.com/v1/ocorrencias/149f469a-6b22-45c6-b8af-ddbf61c3c32a",
+                  "protocol": "https",
+                  "host": [
+                    "sboot-lume-monolith-api",
+                    "onrender",
+                    "com"
+                  ],
+                  "path": [
+                    "v1",
+                    "ocorrencias",
+                    "149f469a-6b22-45c6-b8af-ddbf61c3c32a"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "validarOcorrencia",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"tipoValidacao\": \"PRESENCIEI\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "https://sboot-lume-monolith-api.onrender.com/v1/ocorrencias/149f469a-6b22-45c6-b8af-ddbf61c3c32a/validacoes",
+                  "protocol": "https",
+                  "host": [
+                    "sboot-lume-monolith-api",
+                    "onrender",
+                    "com"
+                  ],
+                  "path": [
+                    "v1",
+                    "ocorrencias",
+                    "149f469a-6b22-45c6-b8af-ddbf61c3c32a",
+                    "validacoes"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "cancelarValidacaoOcorrencia",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "https://sboot-lume-monolith-api.onrender.com/v1/ocorrencias/149f469a-6b22-45c6-b8af-ddbf61c3c32a/validacoes",
+                  "protocol": "https",
+                  "host": [
+                    "sboot-lume-monolith-api",
+                    "onrender",
+                    "com"
+                  ],
+                  "path": [
+                    "v1",
+                    "ocorrencias",
+                    "149f469a-6b22-45c6-b8af-ddbf61c3c32a",
+                    "validacoes"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "excluirOcorrencia",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "https://sboot-lume-monolith-api.onrender.com/v1/ocorrencias/cde58987-0fa9-4ac1-ba83-c40a815ccd50",
+                  "protocol": "https",
+                  "host": [
+                    "sboot-lume-monolith-api",
+                    "onrender",
+                    "com"
+                  ],
+                  "path": [
+                    "v1",
+                    "ocorrencias",
+                    "cde58987-0fa9-4ac1-ba83-c40a815ccd50"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "atualizarStatusOcorrencia",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"status\": \"SOB_ANALISE\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "https://sboot-lume-monolith-api.onrender.com/v1/ocorrencias/caa68a96-37fc-4b99-8f3e-6cfd3868c384",
+                  "protocol": "https",
+                  "host": [
+                    "sboot-lume-monolith-api",
+                    "onrender",
+                    "com"
+                  ],
+                  "path": [
+                    "v1",
+                    "ocorrencias",
+                    "caa68a96-37fc-4b99-8f3e-6cfd3868c384"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Segurança",
+          "item": [
+            {
+              "name": "obterDiagnosticoRaio",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "https://sboot-lume-monolith-api.onrender.com/v1/seguranca/diagnostico-raio?latitude=-23.62975432750927&longitude=-46.51435275573733&raioMetros=300",
+                  "protocol": "https",
+                  "host": [
+                    "sboot-lume-monolith-api",
+                    "onrender",
+                    "com"
+                  ],
+                  "path": [
+                    "v1",
+                    "seguranca",
+                    "diagnostico-raio"
+                  ],
+                  "query": [
+                    {
+                      "key": "latitude",
+                      "value": "-23.62975432750927"
+                    },
+                    {
+                      "key": "longitude",
+                      "value": "-46.51435275573733"
+                    },
+                    {
+                      "key": "raioMetros",
+                      "value": "300"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "listarOcorrenciasParaMapa",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "https://sboot-lume-monolith-api.onrender.com/v1/seguranca/ocorrencias-mapa?latitude=-23.62975432750927&longitude=-46.51435275573733&raioMetros=500&dias=30",
+                  "protocol": "https",
+                  "host": [
+                    "sboot-lume-monolith-api",
+                    "onrender",
+                    "com"
+                  ],
+                  "path": [
+                    "v1",
+                    "seguranca",
+                    "ocorrencias-mapa"
+                  ],
+                  "query": [
+                    {
+                      "key": "latitude",
+                      "value": "-23.62975432750927"
+                    },
+                    {
+                      "key": "longitude",
+                      "value": "-46.51435275573733"
+                    },
+                    {
+                      "key": "raioMetros",
+                      "value": "500"
+                    },
+                    {
+                      "key": "dias",
+                      "value": "30"
+                    },
+                    {
+                      "key": "tipoViolenciaId",
+                      "value": "4",
+                      "disabled": true
+                    },
+                    {
+                      "key": "marcadorId",
+                      "value": "5",
+                      "disabled": true
+                    },
+                    {
+                      "key": "faixaHorario",
+                      "value": "MANHA",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "json_web_token_0ge5",
+      "secret": true
+    },
+    {
+      "key": "json_web_token_16h3",
+      "secret": true
+    },
+    {
+      "key": "json_web_token_1bkn",
+      "secret": true
+    }
+  ]
+}
